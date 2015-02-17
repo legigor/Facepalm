@@ -1,20 +1,63 @@
-﻿// [<EntryPoint>]
-// let main argv =
-//     printfn "%A" argv
-//     0
+﻿module Kernels =
 
-open System.Drawing
-open System.Drawing.Imaging;
+    let private toArray<'T> (d:'T[][]) =
+        Array2D.init 3 3 (fun x y -> d.[x].[y])
 
-let inputFile = "face1.jpg"
-let outputFile = "face1-result.jpg"
+    // http://en.wikipedia.org/wiki/Kernel_(image_processing)#Convolution
 
-// Load image, get the some matrix for processing
-let inputBmp = new Bitmap(inputFile)
-let inputData = Array2D.init inputBmp.Width inputBmp.Height (fun x y -> inputBmp.GetPixel(x, y))
-    
+    let identity = 
+        [|
+            [| 0; 0; 0|]
+            [| 0; 1; 0|]
+            [| 0; 0; 0|]
+        |] |> toArray
+        
+    let edge3 = 
+        [|
+            [|-1;-1;-1|]
+            [|-1; 8;-1|]
+            [|-1;-1;-1|]
+        |] |> toArray
+        
+    let sharpen = 
+        [|
+            [| 0;-1; 0|]
+            [|-1; 5;-1|]
+            [| 0;-1; 0|]
+        |] |> toArray
 
-// Write the result
-let outputBmp = new Bitmap(inputBmp.Width, inputBmp.Height)
-Array2D.iteri (fun x y c -> outputBmp.SetPixel(x, y, c)) inputData
-outputBmp.Save(outputFile, ImageFormat.Jpeg)
+let input = 
+    let rnd = System.Random()
+    Array2D.init 10 10 (fun x y -> rnd.Next(255))
+
+let convo3d width height getInput kernel =
+    let edged l x =
+        match x with
+            | x when x < 0 -> 0
+            | x when x >= l -> (l - 1)  
+            | _ -> x
+    let getk x y = Array2D.get kernel x y
+    let c x y = 
+        Seq.sum (
+            seq {
+                for dx in -1..1 do
+                for dy in -1..1 
+                    ->  getk (dx + 1) (dy + 1) * getInput (edged width (x + dx)) (edged height (y + dy))
+        })
+    seq { for x in 0..width - 1 do 
+          for y in 0..height - 1 -> x, y, c x y }
+
+let output k =
+    printfn "Input of %s\n%A" (input.GetType().ToString()) input
+    printfn "Kernel of %s\n%A" (k.GetType().ToString()) (k)
+    let width = Array2D.length1 input
+    let height = Array2D.length2 input
+    let getInput x y = input.[x, y]
+    convo3d width height getInput k
+
+let res k = 
+    let a = Array2D.copy input
+    Seq.iter (fun (x, y, v) -> Array2D.set a x y v ) (output k)
+    a
+
+printfn "Result\n%A" (res Kernels.sharpen)
