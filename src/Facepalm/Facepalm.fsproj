@@ -54,13 +54,16 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
+    <None Include="input-600.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="Copy of Program.fsx" />
     <None Include="App.config" />
+    <Compile Include="Program.fs" />
+    <Content Include="packages.config" />
     <None Include="input.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="Program.fs" />
-    <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Charting">
